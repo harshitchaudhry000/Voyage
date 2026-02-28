@@ -1,7 +1,31 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import JourneyBackground from "@/components/JourneyBackground";
+import {
+    Upload,
+    Search,
+    Sparkles,
+    RefreshCw,
+    Radio,
+    User,
+    Plane,
+    Star,
+    X,
+    Menu,
+    ArrowRight,
+    Play,
+    Paperclip,
+    Send,
+    CheckCircle,
+    Waves,
+    TreePalm,
+    Landmark,
+    Sunset,
+    Twitter,
+    Linkedin,
+    Github,
+} from "lucide-react";
 
 /* ────────── stat counter hook ────────── */
 function useCountUp(end: number, duration: number = 2000): {
@@ -24,7 +48,8 @@ function useCountUp(end: number, duration: number = 2000): {
                     const animate = (now: number): void => {
                         const elapsed = now - startTime;
                         const progress = Math.min(elapsed / duration, 1);
-                        const eased = 1 - Math.pow(1 - progress, 3);
+                        // Smoother ease-out-quint curve
+                        const eased = 1 - Math.pow(1 - progress, 5);
                         setCount(Math.floor(eased * end));
                         if (progress < 1) requestAnimationFrame(animate);
                     };
@@ -44,19 +69,39 @@ function useCountUp(end: number, duration: number = 2000): {
 /* ────────── scroll reveal hook ────────── */
 function useScrollReveal(): void {
     useEffect(() => {
-        const els = document.querySelectorAll(".animate-in");
-        const observer = new IntersectionObserver(
-            (entries) => {
-                entries.forEach((e) => {
-                    if (e.isIntersecting) {
+        // Use a MutationObserver to handle dynamically added elements
+        const handleIntersect = (entries: IntersectionObserverEntry[]) => {
+            entries.forEach((e) => {
+                if (e.isIntersecting) {
+                    // Small delay to ensure CSS stagger works properly
+                    requestAnimationFrame(() => {
                         (e.target as HTMLElement).classList.add("visible");
-                    }
-                });
-            },
-            { threshold: 0.1 }
-        );
-        els.forEach((el) => observer.observe(el));
-        return () => observer.disconnect();
+                    });
+                }
+            });
+        };
+
+        const observer = new IntersectionObserver(handleIntersect, {
+            threshold: 0.08,
+            rootMargin: "0px 0px -40px 0px"
+        });
+
+        const observe = () => {
+            const els = document.querySelectorAll(".animate-in:not(.visible)");
+            els.forEach((el) => observer.observe(el));
+        };
+
+        // Initial observe
+        observe();
+
+        // Re-observe on DOM changes
+        const mutationObserver = new MutationObserver(observe);
+        mutationObserver.observe(document.body, { childList: true, subtree: true });
+
+        return () => {
+            observer.disconnect();
+            mutationObserver.disconnect();
+        };
     }, []);
 }
 
@@ -90,80 +135,93 @@ type AuthTab = "signin" | "signup";
    ═══════════════════════════════════════════ */
 const FEATURES: Feature[] = [
     {
-        icon: "📤",
+        icon: "upload",
         title: "Multi-Modal Data Intake",
-        desc: "Upload customer info in any format — images, videos, call recordings, emails, chat logs, and documents. AI extracts and structures everything automatically.",
+        desc: "Upload customer info in any format: images, videos, call recordings, emails, chat logs, and documents. Atlas extracts key requirements, flags missing information, and builds a structured travel profile automatically.",
     },
     {
-        icon: "🔍",
-        title: "Smart Template Matching",
-        desc: "Voyage checks pre-built itineraries, historical templates, partner packages, and destination rules to find the perfect starting point for every trip.",
+        icon: "search",
+        title: "Smart Template Matching & Validation",
+        desc: "Atlas checks pre-built itineraries, historical templates, and partner packages. A validation agent surfaces destination constraints, visa requirements, and feasibility warnings before generation begins.",
     },
     {
-        icon: "✨",
+        icon: "sparkles",
         title: "Triple Itinerary Generation",
-        desc: "Get three options per request: original, premium (+20% budget), and a personalized itinerary based on returning customer behavior and past trips.",
+        desc: "Three options every time: an original plan, a premium upgrade (+20% budget with enhanced stays & experiences), and a personalized variant for returning customers based on past trips and behavior.",
     },
     {
-        icon: "🔄",
-        title: "Collaboration Loop",
-        desc: "Continuous feedback cycle between agent, customer, and AI. Review, share, iterate, and approve until the plan is perfect — all in one seamless flow.",
+        icon: "refresh",
+        title: "Agent-Customer Collaboration Loop",
+        desc: "A continuous feedback cycle between agent, customer, and AI. Atlas validates every itinerary change in real time for feasibility. Review, share, iterate, and approve until the plan is perfect.",
     },
     {
-        icon: "📡",
+        icon: "radio",
         title: "Booking & Real-Time Monitoring",
-        desc: "Manage bookings through TBO APIs, track payments, and receive live alerts for schedule changes, cancellations, or disruptions with instant alternatives.",
+        desc: "Finalize bookings across flights, hotels, holiday packages, car rentals, and transfers via TBO APIs. Atlas tracks payments, monitors trip status, and sends live alerts with instant alternatives when disruptions occur.",
     },
     {
-        icon: "👤",
-        title: "Persistent Customer Profiles",
-        desc: "Every interaction builds a smarter profile — travel history, preferences, budget patterns, and behavioral insights power increasingly personalized recommendations.",
+        icon: "user",
+        title: "Persistent Customer Intelligence",
+        desc: "Every interaction enriches a smart customer profile including travel history, preferences, budget patterns, past feedback, and behavioral insights, enabling increasingly personalized recommendations over time.",
     },
 ];
+
+function FeatureIcon({ icon }: { icon: string }) {
+    const props = { size: 22, strokeWidth: 1.8 };
+    switch (icon) {
+        case "upload": return <Upload {...props} />;
+        case "search": return <Search {...props} />;
+        case "sparkles": return <Sparkles {...props} />;
+        case "refresh": return <RefreshCw {...props} />;
+        case "radio": return <Radio {...props} />;
+        case "user": return <User {...props} />;
+        default: return null;
+    }
+}
 
 const STEPS: Step[] = [
     {
         num: "1",
-        title: "Upload & Extract",
-        desc: "Upload customer data in any format. AI extracts requirements, summarizes needs, and highlights missing info.",
+        title: "Intake & Extract",
+        desc: "Upload customer data in any format. Atlas extracts requirements, builds a structured profile, highlights missing info, and flags visa requirements and destination constraints upfront.",
     },
     {
         num: "2",
         title: "Match & Validate",
-        desc: "Voyage searches templates and partner packages. A validation agent checks feasibility and compliance before proceeding.",
+        desc: "Atlas searches partner packages and pre-built templates. A validation agent confirms feasibility, compliance, and logical consistency before itinerary creation begins.",
     },
     {
         num: "3",
-        title: "Generate & Iterate",
-        desc: "Receive up to three itinerary options. Share with the customer, collect feedback, and refine until approved.",
+        title: "Generate & Collaborate",
+        desc: "Receive up to three itinerary options: original, premium, and personalized. Share with the customer, collect feedback, and let Atlas validate every change in real time.",
     },
     {
         num: "4",
         title: "Book & Monitor",
-        desc: "Finalize bookings through API integrations. Voyage monitors trips in real-time and alerts you to any changes.",
+        desc: "Finalize bookings across flights, hotels, packages, and transfers through TBO as the provider. Atlas monitors trips in real time and alerts agents and customers to any disruptions.",
     },
 ];
 
 const TESTIMONIALS: Testimonial[] = [
     {
         stars: 5,
-        text: "Voyage cut our itinerary planning time by 70%. We now handle triple the clients with the same team. The AI suggestions are incredibly accurate.",
+        text: "Atlas cut our itinerary planning time by 70%. We now handle triple the clients with the same team. The real-time validation alone has saved us from countless costly mistakes.",
         name: "Priya Sharma",
-        role: "Operations Lead, TravelMax India",
+        role: "Senior Travel Agent, India",
         initials: "PS",
     },
     {
         stars: 5,
-        text: "The multi-modal intake is a game-changer. Our customers send voice notes, screenshots, PDFs — Voyage handles everything and we never miss a detail.",
+        text: "The multi-modal intake is a game-changer. Our customers send voice notes, WhatsApp screenshots, and PDFs. Atlas handles everything and we never miss a requirement again.",
         name: "David Chen",
-        role: "Senior Agent, Pacific Travels",
+        role: "Independent Travel Agent, Singapore",
         initials: "DC",
     },
     {
         stars: 5,
-        text: "The premium itinerary upsell option alone increased our revenue by 35%. Customers love the upgrade suggestions and it's completely effortless for us.",
+        text: "The premium itinerary upsell option alone increased our revenue by 35%. Customers love the upgrade suggestions and instant booking confirmation makes us look incredibly professional.",
         name: "Sarah Al-Rashid",
-        role: "Founder, Luxe Journeys",
+        role: "Travel Agent & Agency Owner, UAE",
         initials: "SA",
     },
 ];
@@ -180,22 +238,51 @@ export default function Home(): JSX.Element {
     useScrollReveal();
 
     useEffect(() => {
-        const onScroll = (): void => setScrolled(window.scrollY > 40);
-        window.addEventListener("scroll", onScroll);
+        let ticking = false;
+        const onScroll = (): void => {
+            if (!ticking) {
+                requestAnimationFrame(() => {
+                    setScrolled(window.scrollY > 40);
+                    ticking = false;
+                });
+                ticking = true;
+            }
+        };
+        window.addEventListener("scroll", onScroll, { passive: true });
         return () => window.removeEventListener("scroll", onScroll);
     }, []);
 
+    // Lock body scroll when modal or mobile menu is open
+    useEffect(() => {
+        if (authOpen || mobileMenuOpen) {
+            document.body.style.overflow = "hidden";
+        } else {
+            document.body.style.overflow = "";
+        }
+        return () => { document.body.style.overflow = ""; };
+    }, [authOpen, mobileMenuOpen]);
+
     /* stat counters */
     const stat1 = useCountUp(10000);
-    const stat2 = useCountUp(500);
-    const stat3 = useCountUp(50);
-    const stat4 = useCountUp(99);
+    const stat2 = useCountUp(1);
+    const stat3 = useCountUp(100);
+    const stat4 = useCountUp(70);
 
     const openAuth = (tab: AuthTab): void => {
         setAuthTab(tab);
         setAuthOpen(true);
         setMobileMenuOpen(false);
     };
+
+    // Smooth scroll to section
+    const scrollToSection = useCallback((e: React.MouseEvent<HTMLAnchorElement>, id: string) => {
+        e.preventDefault();
+        setMobileMenuOpen(false);
+        const el = document.getElementById(id);
+        if (el) {
+            el.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+    }, []);
 
     return (
         <>
@@ -206,15 +293,17 @@ export default function Home(): JSX.Element {
             <nav className={`navbar ${scrolled ? "scrolled" : ""}`}>
                 <div className="container">
                     <a href="#" className="nav-logo">
-                        <span className="nav-logo-icon">✈</span>
-                        Voyage
+                        <span className="nav-logo-img-wrap">
+                            <img src="/logo.png" alt="Atlas Logo" className="nav-logo-image" />
+                        </span>
+                        Atlas
                     </a>
 
                     <div className="nav-links">
-                        <a href="#features">Features</a>
-                        <a href="#how-it-works">How It Works</a>
-                        <a href="#stats">Stats</a>
-                        <a href="#testimonials">Testimonials</a>
+                        <a href="#features" onClick={(e) => scrollToSection(e, "features")}>Features</a>
+                        <a href="#how-it-works" onClick={(e) => scrollToSection(e, "how-it-works")}>How It Works</a>
+                        <a href="#stats" onClick={(e) => scrollToSection(e, "stats")}>Stats</a>
+                        <a href="#testimonials" onClick={(e) => scrollToSection(e, "testimonials")}>Testimonials</a>
                     </div>
 
                     <div className="nav-auth">
@@ -231,9 +320,7 @@ export default function Home(): JSX.Element {
                         onClick={() => setMobileMenuOpen(true)}
                         aria-label="Open menu"
                     >
-                        <span />
-                        <span />
-                        <span />
+                        <Menu size={22} strokeWidth={2} />
                     </button>
                 </div>
             </nav>
@@ -245,12 +332,12 @@ export default function Home(): JSX.Element {
                     onClick={() => setMobileMenuOpen(false)}
                     aria-label="Close menu"
                 >
-                    ✕
+                    <X size={24} strokeWidth={2} />
                 </button>
-                <a href="#features" onClick={() => setMobileMenuOpen(false)}>Features</a>
-                <a href="#how-it-works" onClick={() => setMobileMenuOpen(false)}>How It Works</a>
-                <a href="#stats" onClick={() => setMobileMenuOpen(false)}>Stats</a>
-                <a href="#testimonials" onClick={() => setMobileMenuOpen(false)}>Testimonials</a>
+                <a href="#features" onClick={(e) => scrollToSection(e, "features")}>Features</a>
+                <a href="#how-it-works" onClick={(e) => scrollToSection(e, "how-it-works")}>How It Works</a>
+                <a href="#stats" onClick={(e) => scrollToSection(e, "stats")}>Stats</a>
+                <a href="#testimonials" onClick={(e) => scrollToSection(e, "testimonials")}>Testimonials</a>
                 <button className="btn btn-ghost" onClick={() => openAuth("signin")}>Sign In</button>
                 <button className="btn btn-primary" onClick={() => openAuth("signup")}>Get Started</button>
             </div>
@@ -258,29 +345,24 @@ export default function Home(): JSX.Element {
             {/* ─── HERO ─── */}
             <section className="hero">
                 <div className="container">
-                    <div className="hero-badge">
-                        <span className="hero-badge-dot" />
-                        AI-Powered Travel Planning
-                    </div>
-
                     <h1 className="hero-title">
-                        Scale Your Agency With{" "}
-                        <span className="gradient-text">Intelligent Automation</span>
+                        Your Agency&apos;s{" "}
+                        <span className="gradient-text">AI-Powered Travel Copilot</span>
                     </h1>
 
                     <p className="hero-description">
-                        Voyage transforms travel agents into AI-augmented advisors. Automate
-                        itinerary generation, streamline bookings, and deliver hyper-personalized
-                        travel experiences — all while keeping you in full control.
+                        Atlas transforms travel agents into AI-augmented advisors. Automate
+                        multi-modal intake, itinerary generation, real-time validation,
+                        and bookings so you scale without sacrificing personalization.
                     </p>
 
                     <div className="hero-cta">
                         <button className="btn btn-primary" onClick={() => openAuth("signup")}>
                             Start Free Trial
-                            <span>→</span>
+                            <ArrowRight size={16} strokeWidth={2.5} />
                         </button>
                         <button className="btn btn-secondary">
-                            <span>▶</span>
+                            <Play size={15} strokeWidth={2.5} fill="currentColor" />
                             Watch Demo
                         </button>
                     </div>
@@ -291,30 +373,119 @@ export default function Home(): JSX.Element {
                                 <span className="hero-visual-dot" />
                                 <span className="hero-visual-dot" />
                                 <span className="hero-visual-dot" />
+                                <span className="hero-topbar-title">Atlas AI Copilot</span>
+                                <span className="hero-topbar-status">
+                                    <span className="hero-topbar-status-dot" />
+                                    Live
+                                </span>
                             </div>
                             <div className="hero-visual-content">
-                                <div className="hero-preview-card">
-                                    <h4>📋 Customer Requirements</h4>
-                                    <div className="hero-preview-line accent" />
-                                    <div className="hero-preview-line medium" />
-                                    <div className="hero-preview-line short" />
-                                    <div className="hero-preview-line" />
-                                    <div className="hero-preview-line medium" />
-                                </div>
-                                <div className="hero-preview-card">
-                                    <h4>📊 Itinerary Analytics</h4>
-                                    <div className="hero-preview-bar">
-                                        <span />
-                                        <span />
-                                        <span />
-                                        <span />
-                                        <span />
+
+                                {/* ── LEFT: Chat Panel ── */}
+                                <div className="hv-chat-panel">
+                                    <div className="hv-chat-header">
+                                        <div className="hv-chat-avatar ai logo">
+                                            <img src="/logo.png" alt="Atlas Logo" />
+                                        </div>
+                                        <div>
+                                            <div className="hv-chat-name">Atlas AI</div>
+                                            <div className="hv-chat-sub">Travel Intelligence Engine</div>
+                                        </div>
                                     </div>
-                                    <div style={{ marginTop: 16 }}>
-                                        <div className="hero-preview-line short accent" />
-                                        <div className="hero-preview-line medium" />
+
+                                    <div className="hv-chat-messages">
+                                        {/* Agent message */}
+                                        <div className="hv-msg hv-msg-agent">
+                                            <div className="hv-msg-avatar">A</div>
+                                            <div className="hv-msg-bubble">
+                                                Family of 4, Bali for 7 days, budget ₹2.5L, loves beaches &amp; culture. No spicy food 🙏
+                                            </div>
+                                        </div>
+
+                                        {/* AI reply */}
+                                        <div className="hv-msg hv-msg-ai">
+                                            <div className="hv-msg-avatar ai-av logo">
+                                                <img src="/logo.png" alt="Voyage AI Logo" />
+                                            </div>
+                                            <div className="hv-msg-bubble ai-bubble">
+                                                Profile built. Generating <strong>3 itinerary options</strong> via TBO — original, premium (+20%), and personalized from past trips.
+                                            </div>
+                                        </div>
+
+                                        {/* Agent follow-up */}
+                                        <div className="hv-msg hv-msg-agent">
+                                            <div className="hv-msg-avatar">A</div>
+                                            <div className="hv-msg-bubble">
+                                                Also check visa-on-arrival eligibility for all 4 travellers.
+                                            </div>
+                                        </div>
+
+                                        {/* AI typing */}
+                                        <div className="hv-msg hv-msg-ai">
+                                            <div className="hv-msg-avatar ai-av logo">
+                                                <img src="/logo.png" alt="Atlus AI Logo" />
+                                            </div>
+                                            <div className="hv-msg-bubble ai-bubble hv-typing">
+                                                <span /><span /><span />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="hv-chat-input">
+                                        <span className="hv-chat-input-icon"><Paperclip size={13} strokeWidth={2} /></span>
+                                        <span className="hv-chat-placeholder">Add a note or attachment…</span>
+                                        <span className="hv-chat-send"><Send size={11} strokeWidth={2.5} /></span>
                                     </div>
                                 </div>
+
+                                {/* ── RIGHT: Itinerary Result Card ── */}
+                                <div className="hv-itinerary-panel">
+                                    <div className="hv-itin-header">
+                                        <div className="hv-itin-badge">✨ AI Generated</div>
+                                        <div className="hv-itin-title">Bali Family Escape</div>
+                                        <div className="hv-itin-meta">7 Days · 4 Pax · ₹2.4L</div>
+                                    </div>
+
+                                    {/* Destination strip */}
+                                    <div className="hv-dest-strip">
+                                        {[
+                                            <Sunset key={0} size={18} strokeWidth={1.6} />,
+                                            <TreePalm key={1} size={18} strokeWidth={1.6} />,
+                                            <Landmark key={2} size={18} strokeWidth={1.6} />,
+                                            <Waves key={3} size={18} strokeWidth={1.6} />,
+                                        ].map((icon, i) => (
+                                            <div key={i} className="hv-dest-chip">{icon}</div>
+                                        ))}
+                                    </div>
+
+                                    {/* Day plan rows */}
+                                    <div className="hv-days">
+                                        {[
+                                            { day: "Day 1", place: "Seminyak Beach", tag: "Arrival" },
+                                            { day: "Day 2–3", place: "Ubud Terraces", tag: "Culture" },
+                                            { day: "Day 4–5", place: "Uluwatu Temple", tag: "Heritage" },
+                                            { day: "Day 6–7", place: "Nusa Dua", tag: "Leisure" },
+                                        ].map((d, i) => (
+                                            <div key={i} className="hv-day-row">
+                                                <div className="hv-day-dot" />
+                                                <div className="hv-day-info">
+                                                    <span className="hv-day-label">{d.day}</span>
+                                                    <span className="hv-day-place">{d.place}</span>
+                                                </div>
+                                                <div className="hv-day-tag">{d.tag}</div>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    <div className="hv-itin-footer">
+                                        <span className="hv-itin-status">
+                                            <CheckCircle size={13} strokeWidth={2} />
+                                            Ready to Share
+                                        </span>
+                                        <span className="hv-itin-approve">Approve →</span>
+                                    </div>
+                                </div>
+
                             </div>
                         </div>
                     </div>
@@ -326,11 +497,11 @@ export default function Home(): JSX.Element {
                 <div className="container">
                     <div className="stat-item" ref={stat1.ref}>
                         <div className="stat-value">{stat1.count.toLocaleString()}+</div>
-                        <div className="stat-label">Itineraries Generated</div>
+                        <div className="stat-label">Travel Plans Generated</div>
                     </div>
                     <div className="stat-item" ref={stat2.ref}>
-                        <div className="stat-value">{stat2.count}+</div>
-                        <div className="stat-label">Travel Agents</div>
+                        <div className="stat-value">{stat2.count}M+</div>
+                        <div className="stat-label">Global Suppliers</div>
                     </div>
                     <div className="stat-item" ref={stat3.ref}>
                         <div className="stat-value">{stat3.count}+</div>
@@ -338,7 +509,7 @@ export default function Home(): JSX.Element {
                     </div>
                     <div className="stat-item" ref={stat4.ref}>
                         <div className="stat-value">{stat4.count}%</div>
-                        <div className="stat-label">Uptime Reliability</div>
+                        <div className="stat-label">Planning Time Saved</div>
                     </div>
                 </div>
             </section>
@@ -350,18 +521,18 @@ export default function Home(): JSX.Element {
                         <span className="section-label">Features</span>
                         <h2 className="section-title">
                             Everything You Need to{" "}
-                            <span className="gradient-text">Plan Smarter</span>
+                            <span className="gradient-text">Scale Smarter</span>
                         </h2>
                         <p className="section-subtitle">
-                            Voyage handles the heavy lifting so you can focus on what matters
-                            — delivering unforgettable travel experiences.
+                            Atlas handles the complexity, from multi-modal intake to real-time
+                            booking, so agents focus on relationships, not repetition.
                         </p>
                     </div>
 
                     <div className="features-grid">
                         {FEATURES.map((feature: Feature, i: number) => (
                             <div key={i} className="feature-card animate-in">
-                                <div className="feature-icon">{feature.icon}</div>
+                                <div className="feature-icon"><FeatureIcon icon={feature.icon} /></div>
                                 <h3>{feature.title}</h3>
                                 <p>{feature.desc}</p>
                             </div>
@@ -376,12 +547,12 @@ export default function Home(): JSX.Element {
                     <div className="how-it-works-header">
                         <span className="section-label">How It Works</span>
                         <h2 className="section-title">
-                            From <span className="gradient-text">Upload to Booking</span> in
+                            From <span className="gradient-text">Customer Brief to Confirmed Booking</span> in
                             Minutes
                         </h2>
                         <p className="section-subtitle">
-                            A streamlined four-step workflow that turns raw customer data into
-                            confirmed bookings.
+                            A streamlined four-step AI workflow that turns raw customer inputs into
+                            confirmed bookings, with a human agent in control at every step.
                         </p>
                     </div>
 
@@ -404,11 +575,11 @@ export default function Home(): JSX.Element {
                     <div className="testimonials-header">
                         <span className="section-label">Testimonials</span>
                         <h2 className="section-title">
-                            Trusted by <span className="gradient-text">Leading Agents</span>
+                            Trusted by <span className="gradient-text">Travel Agents Worldwide</span>
                         </h2>
                         <p className="section-subtitle">
-                            Hear from travel professionals who are already scaling their
-                            operations with Voyage.
+                            Hear from travel professionals who are already scaling
+                            their operations with Atlas.
                         </p>
                     </div>
 
@@ -444,8 +615,8 @@ export default function Home(): JSX.Element {
                             Agency?
                         </h2>
                         <p className="section-subtitle">
-                            Join hundreds of travel agents already using Voyage to deliver
-                            exceptional experiences at scale. Start your free 14-day trial today.
+                            Join travel agents worldwide already using Atlas to automate
+                            planning, grow revenue, and deliver exceptional experiences at scale.
                         </p>
                         <div className="cta-buttons">
                             <button className="btn btn-primary" onClick={() => openAuth("signup")}>
@@ -464,12 +635,14 @@ export default function Home(): JSX.Element {
                     <div className="footer-grid">
                         <div className="footer-brand">
                             <a href="#" className="nav-logo">
-                                <span className="nav-logo-icon">✈</span>
-                                Voyage
+                                <span className="nav-logo-img-wrap">
+                                    <img src="/logo.png" alt="Atlas Logo" className="nav-logo-image" />
+                                </span>
+                                Atlas
                             </a>
                             <p>
-                                AI-powered travel copilot helping agents scale operations,
-                                automate planning, and deliver personalized experiences.
+                                AI-powered travel copilot helping agents automate
+                                planning, enable real-time booking, and scale without compromise.
                             </p>
                         </div>
 
@@ -504,11 +677,11 @@ export default function Home(): JSX.Element {
                     </div>
 
                     <div className="footer-bottom">
-                        <p>© 2026 Voyage. All rights reserved.</p>
+                        <p>© 2026 Atlas. Built for TBO Tek Hackathon. All rights reserved.</p>
                         <div className="footer-socials">
-                            <a href="#" className="footer-social-link" aria-label="Twitter">𝕏</a>
-                            <a href="#" className="footer-social-link" aria-label="LinkedIn">in</a>
-                            <a href="#" className="footer-social-link" aria-label="GitHub">⌥</a>
+                            <a href="#" className="footer-social-link" aria-label="Twitter"><Twitter size={16} strokeWidth={1.8} /></a>
+                            <a href="#" className="footer-social-link" aria-label="LinkedIn"><Linkedin size={16} strokeWidth={1.8} /></a>
+                            <a href="#" className="footer-social-link" aria-label="GitHub"><Github size={16} strokeWidth={1.8} /></a>
                         </div>
                     </div>
                 </div>
@@ -527,7 +700,7 @@ export default function Home(): JSX.Element {
                         onClick={() => setAuthOpen(false)}
                         aria-label="Close"
                     >
-                        ✕
+                        <X size={18} strokeWidth={2} />
                     </button>
 
                     <div className="auth-tabs">
@@ -549,7 +722,7 @@ export default function Home(): JSX.Element {
                         <>
                             <h2>Welcome Back</h2>
                             <p className="auth-subtitle">
-                                Sign in to access your Voyage dashboard.
+                                Sign in to access your Atlas dashboard.
                             </p>
                             <form className="auth-form" onSubmit={(e: React.FormEvent) => e.preventDefault()}>
                                 <div className="form-group">
@@ -576,8 +749,8 @@ export default function Home(): JSX.Element {
                                 <span>or continue with</span>
                             </div>
                             <div className="auth-social-buttons">
-                                <button className="auth-social-btn">G&ensp;Google</button>
-                                <button className="auth-social-btn">🔗&ensp;Microsoft</button>
+                                <button className="auth-social-btn"><span className="g-icon">G</span> Google</button>
+                                <button className="auth-social-btn"><span className="ms-icon">⊞</span> Microsoft</button>
                             </div>
                             <p className="auth-footer">
                                 Don&apos;t have an account?{" "}
@@ -596,7 +769,7 @@ export default function Home(): JSX.Element {
                         <>
                             <h2>Create Your Account</h2>
                             <p className="auth-subtitle">
-                                Start your free 14-day trial. No credit card required.
+                                Get started with Atlas. No credit card required.
                             </p>
                             <form className="auth-form" onSubmit={(e: React.FormEvent) => e.preventDefault()}>
                                 <div className="form-group">
@@ -631,8 +804,8 @@ export default function Home(): JSX.Element {
                                 <span>or sign up with</span>
                             </div>
                             <div className="auth-social-buttons">
-                                <button className="auth-social-btn">G&ensp;Google</button>
-                                <button className="auth-social-btn">🔗&ensp;Microsoft</button>
+                                <button className="auth-social-btn"><span className="g-icon">G</span> Google</button>
+                                <button className="auth-social-btn"><span className="ms-icon">⊞</span> Microsoft</button>
                             </div>
                             <p className="auth-footer">
                                 Already have an account?{" "}

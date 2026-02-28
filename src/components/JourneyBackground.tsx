@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type JSX } from "react";
+import { useEffect, useRef, useState, useCallback, type JSX } from "react";
 
 /* ═══════════════════════════════════════════════════
    Journey Background — 4 Sequential Scroll Scenes
@@ -17,11 +17,26 @@ const C = {
     pale: "#c49a7a", cream: "#ecdbc9", water: "#87a5b4", waterDark: "#6b8a9a",
 };
 
+/* ── Smooth easing function ── */
+function easeInOutCubic(t: number): number {
+    return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+}
+
+function smoothStep(edge0: number, edge1: number, x: number): number {
+    const t = Math.max(0, Math.min(1, (x - edge0) / (edge1 - edge0)));
+    return t * t * (3 - 2 * t);
+}
+
 /* ── SCENE 1: Pyramids + Traveller Silhouette ── */
 function Scene1({ progress, cloudTime }: { progress: number; cloudTime: number }): JSX.Element {
-    const opacity = progress < 0 ? 0 : progress > 1 ? Math.max(0, 1 - (progress - 1) * 4) : 1;
-    // cloudTime provides perpetual drift independent of scroll
-    const cloudBase = cloudTime * 30;
+    // Smoother fade: use smoothStep for transitions
+    const fadeIn = smoothStep(-0.1, 0.2, progress);
+    const fadeOut = progress > 1 ? smoothStep(1, 1.3, progress) : 0;
+    const opacity = fadeIn * (1 - fadeOut);
+    const cloudBase = cloudTime * 25;
+
+    // Subtle parallax on elements
+    const parallax = progress * 15;
 
     return (
         <g opacity={opacity}>
@@ -31,25 +46,29 @@ function Scene1({ progress, cloudTime }: { progress: number; cloudTime: number }
                 </linearGradient>
             </defs>
             <rect width="1920" height="1080" fill="url(#sky1)" />
-            {/* Sun */}
-            <circle cx={960} cy={380} r={100} fill={C.sand} opacity={0.3} />
-            <circle cx={960} cy={380} r={70} fill={C.pale} opacity={0.25} />
+            {/* Sun with soft glow */}
+            <circle cx={960} cy={380 + parallax} r={120} fill={C.sand} opacity={0.15} />
+            <circle cx={960} cy={380 + parallax} r={100} fill={C.sand} opacity={0.25} />
+            <circle cx={960} cy={380 + parallax} r={70} fill={C.pale} opacity={0.2} />
             {/* Desert floor */}
             <rect x={0} y={780} width={1920} height={300} fill={C.ground} />
             <ellipse cx={960} cy={780} rx={1100} ry={40} fill={C.sand} opacity={0.3} />
-            {/* Pyramids — lowered so clouds are clearly visible above */}
-            <polygon points="800,780 1000,520 1200,780" fill={C.brown} opacity={0.5} />
-            <polygon points="1050,780 1200,580 1350,780" fill={C.light} opacity={0.4} />
-            <polygon points="550,780 650,620 750,780" fill={C.brown} opacity={0.35} />
-            <line x1={1000} y1={520} x2={1100} y2={780} stroke={C.mid} strokeWidth={1} opacity={0.15} />
-            {/* Clouds drifting */}
+            {/* Pyramids with parallax */}
+            <g style={{ transform: `translateY(${parallax * 0.5}px)` }}>
+                <polygon points="800,780 1000,520 1200,780" fill={C.brown} opacity={0.5} />
+                <polygon points="1050,780 1200,580 1350,780" fill={C.light} opacity={0.4} />
+                <polygon points="550,780 650,620 750,780" fill={C.brown} opacity={0.35} />
+                <line x1={1000} y1={520} x2={1100} y2={780} stroke={C.mid} strokeWidth={1} opacity={0.15} />
+            </g>
+            {/* Clouds drifting — smoother motion */}
             {[0, 1, 2, 3, 4].map((i) => {
                 const bx = [-100, 300, 700, 1100, 1500][i];
                 const y = [120, 180, 90, 200, 140][i];
                 const s = [1.2, 0.9, 1.4, 0.8, 1.1][i];
-                const x = ((bx + cloudBase + i * 80) % 2200) - 200;
+                const speed = [1, 0.7, 1.2, 0.6, 0.9][i];
+                const x = ((bx + cloudBase * speed + i * 80) % 2200) - 200;
                 return (
-                    <g key={i} transform={`translate(${x},${y}) scale(${s})`} opacity={0.2}>
+                    <g key={i} transform={`translate(${x},${y}) scale(${s})`} opacity={0.18}>
                         <ellipse cx={0} cy={0} rx={60} ry={18} fill={C.pale} />
                         <ellipse cx={-25} cy={-6} rx={35} ry={16} fill={C.pale} />
                         <ellipse cx={22} cy={-8} rx={40} ry={17} fill={C.pale} />
@@ -59,8 +78,8 @@ function Scene1({ progress, cloudTime }: { progress: number; cloudTime: number }
             {/* Dunes */}
             <ellipse cx={200} cy={820} rx={180} ry={15} fill={C.sand} opacity={0.25} />
             <ellipse cx={1400} cy={830} rx={200} ry={12} fill={C.sand} opacity={0.22} />
-            {/* Man silhouette */}
-            <g transform="translate(300, 680)">
+            {/* Man silhouette with subtle sway */}
+            <g transform={`translate(300, ${680 - parallax * 0.3})`}>
                 <ellipse cx={10} cy={100} rx={25} ry={5} fill={C.dark} opacity={0.15} />
                 <circle cx={0} cy={0} r={12} fill={C.dark} />
                 <path d="M0,12 L0,55" stroke={C.dark} strokeWidth={10} strokeLinecap="round" />
@@ -83,14 +102,16 @@ function Scene1({ progress, cloudTime }: { progress: number; cloudTime: number }
 
 /* ── SCENE 2: Plane RIGHT→LEFT on runway + buildings ── */
 function Scene2({ progress }: { progress: number }): JSX.Element {
-    const opacity = progress < 0 ? 0 : progress > 1 ? Math.max(0, 1 - (progress - 1) * 4) : Math.min(1, progress * 4);
-    // Plane moves from right (2200) to left (-640), SVG naturally faces left
-    const planeX = 2200 - progress * 2840;
+    const fadeIn = smoothStep(-0.1, 0.2, progress);
+    const fadeOut = progress > 1 ? smoothStep(1, 1.3, progress) : 0;
+    const opacity = fadeIn * (1 - fadeOut);
+
+    // Smoother plane path with easing
+    const easedProgress = easeInOutCubic(Math.max(0, Math.min(1, progress)));
+    const planeX = 1960 - easedProgress * 1800;
     const planeY = 260 - Math.sin(progress * Math.PI) * 100;
-    // 1/3 of viewport = 640 at 1920
     const planeW = 640;
     const planeH = 640;
-    // Building size
     const bldgW = 120;
     const bldgH = 120;
 
@@ -161,11 +182,15 @@ function Scene2({ progress }: { progress: number }): JSX.Element {
 
 /* ── SCENE 3: Ship sailing LEFT→RIGHT ── */
 function Scene3({ progress }: { progress: number }): JSX.Element {
-    const opacity = progress < 0 ? 0 : progress > 1 ? Math.max(0, 1 - (progress - 1) * 4) : Math.min(1, progress * 4);
-    // Ship moves from left (-640) to right (1920)
-    const shipX = -640 + progress * 2560;
+    const fadeIn = smoothStep(-0.1, 0.2, progress);
+    const fadeOut = progress > 1 ? smoothStep(1, 1.3, progress) : 0;
+    const opacity = fadeIn * (1 - fadeOut);
+
+    // Smoother ship movement
+    const easedProgress = easeInOutCubic(Math.max(0, Math.min(1, progress)));
+    const shipX = -380 + easedProgress * 1600;
     const bobY = Math.sin(progress * Math.PI * 4) * 4;
-    const shipW = 640; // 1/3 viewport
+    const shipW = 640;
     const shipH = 640;
 
     return (
@@ -178,7 +203,7 @@ function Scene3({ progress }: { progress: number }): JSX.Element {
             <rect width="1920" height="1080" fill="url(#sky3)" />
             {/* Water */}
             <rect x={0} y={560} width={1920} height={520} fill={C.water} opacity={0.25} />
-            {/* Water waves */}
+            {/* Water waves — animated subtle */}
             {[0, 1, 2, 3, 4, 5].map(i => (
                 <path key={i}
                     d={`M${i * 320 - 50},${600 + i * 18} Q${i * 320 + 80},${590 + i * 18} ${i * 320 + 160},${600 + i * 18} T${i * 320 + 320},${600 + i * 18}`}
@@ -214,8 +239,11 @@ function Scene3({ progress }: { progress: number }): JSX.Element {
 
 /* ── SCENE 4: Family Entering Hotel ── */
 function Scene4({ progress }: { progress: number }): JSX.Element {
-    const opacity = progress < 0 ? 0 : Math.min(1, progress * 4);
-    const familyX = 1200 - progress * 400;
+    const fadeIn = smoothStep(-0.1, 0.2, progress);
+    const opacity = Math.min(1, fadeIn);
+
+    const easedProgress = easeInOutCubic(Math.max(0, Math.min(1, progress)));
+    const familyX = 1200 - easedProgress * 400;
 
     return (
         <g opacity={opacity}>
@@ -313,30 +341,48 @@ function Scene4({ progress }: { progress: number }): JSX.Element {
 
 /* ═══════════════════════════════
    MAIN — maps scroll to 4 scenes
+   Uses smoothed scroll position for buttery animation
    ═══════════════════════════════ */
 export default function JourneyBackground(): JSX.Element {
     const [scrollPct, setScrollPct] = useState(0);
     const [cloudTime, setCloudTime] = useState(0);
+    const targetScrollRef = useRef(0);
+    const currentScrollRef = useRef(0);
     const rafRef = useRef<number>(0);
 
-    useEffect(() => {
-        const onScroll = () => {
-            const max = document.documentElement.scrollHeight - window.innerHeight;
-            setScrollPct(max > 0 ? Math.min(1, Math.max(0, window.scrollY / max)) : 0);
-        };
-        window.addEventListener("scroll", onScroll, { passive: true });
-        onScroll();
-        return () => window.removeEventListener("scroll", onScroll);
+    // Smooth scroll interpolation for buttery scene transitions
+    const updateScroll = useCallback(() => {
+        const max = document.documentElement.scrollHeight - window.innerHeight;
+        targetScrollRef.current = max > 0 ? Math.min(1, Math.max(0, window.scrollY / max)) : 0;
     }, []);
 
-    // Perpetual cloud animation — runs continuously
     useEffect(() => {
-        let start: number | null = null;
+        window.addEventListener("scroll", updateScroll, { passive: true });
+        updateScroll();
+        return () => window.removeEventListener("scroll", updateScroll);
+    }, [updateScroll]);
+
+    // Unified animation loop — smooth scroll lerp + cloud time
+    useEffect(() => {
+        let startTs: number | null = null;
+        const LERP_FACTOR = 0.04; // Lower = smoother / slower — targeted for plane & ship
+
         const tick = (ts: number) => {
-            if (start === null) start = ts;
-            setCloudTime((ts - start) / 1000); // seconds elapsed
+            if (startTs === null) startTs = ts;
+
+            // Smooth interpolate scroll position
+            const target = targetScrollRef.current;
+            const current = currentScrollRef.current;
+            const newCurrent = current + (target - current) * LERP_FACTOR;
+            currentScrollRef.current = newCurrent;
+
+            // Only update state when there's meaningful change
+            setScrollPct(newCurrent);
+            setCloudTime((ts - startTs) / 1000);
+
             rafRef.current = requestAnimationFrame(tick);
         };
+
         rafRef.current = requestAnimationFrame(tick);
         return () => cancelAnimationFrame(rafRef.current);
     }, []);

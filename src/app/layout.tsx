@@ -2,16 +2,32 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-    title: "Voyage — AI-Powered Travel Copilot for Agents",
+    title: "Atlas — AI-Powered Travel Copilot for Agents",
     description:
-        "Voyage is an AI-powered copilot designed to help travel agents manage complex itinerary planning, automate workflows, and deliver personalized travel experiences at scale.",
+        "Atlas is an AI-powered copilot that helps travel agents automate itinerary planning, validate bookings in real time, and scale personalized travel experiences without sacrificing quality.",
     keywords: [
-        "travel agent",
-        "AI copilot",
-        "itinerary planning",
-        "travel automation",
-        "travel tech",
+        "TBO Tek",
+        "B2B travel agent",
+        "AI travel copilot",
+        "itinerary automation",
+        "travel tech hackathon",
+        "Atlas AI",
     ],
+    icons: {
+        icon: "/logo.png",
+        shortcut: "/logo.png",
+        apple: "/logo.png",
+    },
+    openGraph: {
+        images: [
+            {
+                url: "/logo.png",
+                width: 800,
+                height: 800,
+                alt: "Voyage Logo",
+            },
+        ],
+    },
 };
 
 export default function RootLayout({
@@ -21,7 +37,7 @@ export default function RootLayout({
 }) {
     return (
         <html lang="en">
-            <body>{children}</body>
+            <body suppressHydrationWarning>{children}</body>
         </html>
     );
 }
